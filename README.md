@@ -64,7 +64,7 @@ ln -s ~/path/to/your/existing/vault knowledge/vault
 
 ```
 You ──── Obsidian ──── knowledge/vault/     (your notes, your ideas)
-                              ↑ agents read
+  ↓                           ↑ agents read 
 Agent ── akms CLI ──── knowledge/graph/     (structured knowledge nodes)
                               ↑ agents read + write
 ```
