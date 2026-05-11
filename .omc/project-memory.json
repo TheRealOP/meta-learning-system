@@ -1,0 +1,79 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1778484679883,
+  "projectRoot": "/Users/ojaspolakhare/Documents/GitHub/meta-learning-system",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "akms": {
+      "path": "akms",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1778484679867,
+      "keyFiles": [
+        "README.md",
+        "agents.md",
+        "akms_config.yaml.example",
+        "how-this-works.md",
+        "pyproject.toml"
+      ]
+    },
+    "knowledge": {
+      "path": "knowledge",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1778484679867,
+      "keyFiles": [
+        "akms.db",
+        "research_queue.md"
+      ]
+    },
+    "akms/src": {
+      "path": "akms/src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1778484679868,
+      "keyFiles": []
+    },
+    "akms/tests": {
+      "path": "akms/tests",
+      "purpose": "Test files",
+      "fileCount": 12,
+      "lastAccessed": 1778484679868,
+      "keyFiles": [
+        "conftest.py",
+        "test_config.py",
+        "test_db.py"
+      ]
+    }
+  },
+  "hotPaths": [],
+  "userDirectives": []
+}
