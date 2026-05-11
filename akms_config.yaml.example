@@ -1,43 +1,27 @@
 # Meta-Learning System — AKMS Configuration
-# Copy to akms_config.yaml and add your API key(s).
 #
-# You only need ONE provider. Pick whichever you have:
-#   - ollama: free, local, no API key needed
-#   - claude: needs CLAUDE_API_KEY
-#   - openai: needs OPENAI_API_KEY
-
-# ── Option A: Local models (Ollama) ──────────────────────────
-# providers:
-#   ollama:
-#     base_url: "http://localhost:11434"
-#     models: [llama3.3, mistral]
+# Expert + Librarian use claude_cli: runs `claude -p` as a subprocess.
+# No API key needed — uses your existing Claude subscription auth.
 #
-# agent_assignments:
-#   expert:    { provider: ollama, model: llama3.3 }
-#   librarian: { provider: ollama, model: llama3.3 }
+# To migrate Expert to a self-hosted model on RunPod:
+#   1. Add a runpod provider block with your pod's base_url
+#   2. Change agent_assignments.expert.provider to runpod
 
-# ── Option B: Claude ─────────────────────────────────────────
 providers:
-  claude:
-    api_key: "${CLAUDE_API_KEY}"
+  claude_cli:
     models:
-      - claude-sonnet-4-6
+      - claude-opus-4-6
+
+  # Uncomment when RunPod is ready:
+  # runpod:
+  #   base_url: "https://<your-pod-id>.proxy.runpod.net"
+  #   models:
+  #     - <your-model-name>
 
 agent_assignments:
-  expert:    { provider: claude, model: claude-sonnet-4-6 }
-  librarian: { provider: claude, model: claude-sonnet-4-6 }
+  expert:    { provider: claude_cli, model: claude-opus-4-6 }
+  librarian: { provider: claude_cli, model: claude-opus-4-6 }
 
-# ── Option C: OpenAI ─────────────────────────────────────────
-# providers:
-#   openai:
-#     api_key: "${OPENAI_API_KEY}"
-#     models: [gpt-4o]
-#
-# agent_assignments:
-#   expert:    { provider: openai, model: gpt-4o }
-#   librarian: { provider: openai, model: gpt-4o }
-
-# ── Knowledge paths (don't change unless you know what you're doing) ──
 knowledge:
   graph_dir: "knowledge/graph"
   archives_dir: "knowledge/archives"
