@@ -1,0 +1,3 @@
+[submodule "akms"]
+	path = akms
+	url = https://github.com/TheRealOP/Agent-Knowledge-Management-System.git
