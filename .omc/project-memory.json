@@ -74,6 +74,13 @@
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "akms_config.yaml.example",
+      "accessCount": 1,
+      "lastAccessed": 1778542660220,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }
