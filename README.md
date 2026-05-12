@@ -122,5 +122,5 @@ akms get distributed-systems/raft
 Key rules:
 - **Read the vault** before answering domain questions — the user's notes have context
 - **Use `akms` commands** to search and query the structured graph
-- **Never write to the vault** — only the user writes there
+- **Only write to the vault when explicitly asked** — otherwise, it is the user's space
 - **Ingest vault notes** into the graph when they contain learnable knowledge

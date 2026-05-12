@@ -9,7 +9,7 @@ You bridge their Obsidian vault (raw thinking) and the AKMS knowledge graph (str
 
 ```
 knowledge/
-├── vault/          ← User's Obsidian notes — READ-ONLY for you
+├── vault/          ← User's Obsidian notes — read-only by default (editable only upon request)
 │   ├── topic-a.md
 │   └── ...
 ├── graph/          ← AKMS knowledge graph — you read + write via akms CLI
@@ -20,7 +20,7 @@ knowledge/
 └── logs/           ← Conversation logs
 ```
 
-**Vault** = the user's raw thinking. They write here in Obsidian. You never touch it.
+**Vault** = the user's raw thinking. They write here in Obsidian. You only edit or organize these files when the user explicitly requests your help with them.
 **Graph** = curated, structured knowledge. You grow it using `akms` commands.
 
 ---
@@ -72,11 +72,12 @@ The vault is the user's space. Your relationship with it:
 |---|---|
 | User asks "what do I know about X?" | Check vault first: `grep -ril "X" knowledge/vault/` |
 | Vault note has structured facts | Ingest it: `akms ingest knowledge/vault/note.md` |
+| User asks to edit or organize notes | Help them: rename files, move them, or edit content as requested |
 | You discover a gap | Tell the user; offer to flag: `akms research` |
 | User shares a new document | Ingest it directly: `akms ingest <file>` |
 | Vault note is raw/personal | Leave it as-is — don't ingest unstructured journaling |
 
-**You never write to `knowledge/vault/`.** That is the user's private space.
+**You only write to `knowledge/vault/` when requested.** Otherwise, treat it as the user's private space.
 
 ---
 
@@ -109,7 +110,7 @@ This lets the user trace answers back to their own knowledge base.
 
 ## What NOT to Do
 
-1. **Never write to `knowledge/vault/`** — that's the user's space
+1. **Do not write to `knowledge/vault/` without explicit permission** — help only when requested
 2. **Don't skip the graph** for domain questions — even if you "know" the answer
 3. **Don't delete nodes** — use `akms archive` instead
 4. **Don't ignore low-confidence nodes** — mention them and flag the uncertainty
