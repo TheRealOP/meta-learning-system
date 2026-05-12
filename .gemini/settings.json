@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "akms": {
+      "command": "/Users/ojaspolakhare/.local/bin/akms-mcp-wrapper",
+      "args": []
+    }
+  }
+}
