@@ -22,6 +22,17 @@ agent_assignments:
   expert:    { provider: claude_cli, model: claude-opus-4-6 }
   librarian: { provider: claude_cli, model: claude-opus-4-6 }
 
+# Advanced: Multi-provider pools for load balancing and quota management
+agent_pools:
+  architect:
+    - { provider: claude_cli, model: claude-opus-4-6 }
+    - { provider: gemini_cli, model: gemini-2.5-pro }
+  executor:
+    - { provider: gemini_cli, model: gemini-2.5-pro }
+    - { provider: openai, model: gpt-4o-mini }
+  specialist:
+    - { provider: openai, model: o1-preview }
+
 knowledge:
   graph_dir: "knowledge/graph"
   archives_dir: "knowledge/archives"
