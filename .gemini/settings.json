@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "akms": {
-      "command": "/Users/ojaspolakhare/.local/bin/akms-mcp-wrapper",
-      "args": []
+      "command": "/Library/Frameworks/Python.framework/Versions/3.12/bin/akms-mcp",
+      "args": [],
+      "env": {
+        "AKMS_CONFIG": "/Users/ojaspolakhare/Documents/GitHub/meta-learning-system/akms_config.yaml"
+      }
     }
   }
 }

@@ -41,6 +41,31 @@ akms ask "<section>" "<question>"
 
 ---
 
+## Agent Skills & MCP Tools
+
+Your capabilities are extended via the **AKMS MCP Server**. These tools are your "Skills." Use them to maintain high context accuracy and ground your answers in the user's personal knowledge.
+
+### 🧠 Expert Reasoning (Skill: `ask_section`)
+- **Action:** Deep-dive into a specific knowledge domain.
+- **Workflow:** When a question is domain-specific, don't guess. Use `ask_section` to invoke the Expert agent. The Expert loads all nodes in that section into its memory for a high-fidelity answer.
+- **Example:** `akms ask_section(section="physics", question="Explain the double slit experiment")`
+
+### 🔍 Knowledge Retrieval (Skill: `search_graph`, `list_sections`)
+- **Action:** Broad search across the entire knowledge base.
+- **Workflow:** Use `list_sections` to see the map of the brain, then `search_graph` to find specific nodes. Always search before you answer "I don't know."
+- **Example:** `akms search_graph(query="quantum entanglement")`
+
+### 📥 Knowledge Ingestion (Skill: `ingest_document`)
+- **Action:** Permanently save new information.
+- **Workflow:** When the user shares a valuable snippet, file, or complex explanation, use `ingest_document` to send it to the Librarian.
+- **Example:** `akms ingest_document(file_path="new_research.md")`
+
+### 🛠️ Graph Maintenance (Skills: `archive_node`, `check_consistency`)
+- **Action:** Keep the brain healthy.
+- **Workflow:** If you find outdated info, use `archive_node`. Periodically run `check_consistency` to fix broken links.
+
+---
+
 ## The Learning Loop
 
 This is how knowledge flows in the system:
