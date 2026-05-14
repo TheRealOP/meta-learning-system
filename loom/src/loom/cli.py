@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import signal
 import subprocess
 import tempfile
@@ -17,6 +18,9 @@ from loom.providers import PROVIDERS, probe_provider
 from loom.runtime import RuntimeErrorDetail, TmuxRuntime, resolve_agent, spawn_task
 from loom.scoring import aggregate_states, select_agent
 from loom.storage import LoomStore
+
+
+WORKSPACE_NAME = "loom-workspace"
 
 
 def _store(ctx: click.Context) -> LoomStore:
@@ -146,6 +150,76 @@ def run(ctx: click.Context, goal: str, repo: str) -> None:
 def spawn(ctx: click.Context, agent_name: str, repo: str, task: str) -> None:
     """Spawn a task with a specific agent."""
     _spawn(ctx, task, agent=resolve_agent(agent_name), repo=repo)
+
+
+@main.command()
+@click.option("--name", default=WORKSPACE_NAME, show_default=True, help="Workspace tmux session name")
+@click.option("--attach", "do_attach", is_flag=True, help="Attach immediately after launching")
+@click.pass_context
+def launch(ctx: click.Context, name: str, do_attach: bool) -> None:
+    """Launch the Loom 4-pane tmux workspace (monitor / codex / claude / gemini)."""
+    if not shutil.which("tmux"):
+        raise click.ClickException("tmux not found")
+    check = subprocess.run(["tmux", "has-session", "-t", name], capture_output=True)
+    if check.returncode == 0:
+        suffix = f" --name {name}" if name != WORKSPACE_NAME else ""
+        raise click.ClickException(f"Workspace '{name}' is already running. Use: loom workspace attach{suffix}")
+    try:
+        subprocess.run(["tmux", "new-session", "-d", "-s", name, "loom monitor"], check=True, capture_output=True, text=True)
+        subprocess.run(["tmux", "split-window", "-h", "-t", f"{name}:0.0", "codex"], check=True, capture_output=True)
+        subprocess.run(["tmux", "split-window", "-v", "-t", f"{name}:0.0", "claude"], check=True, capture_output=True)
+        subprocess.run(["tmux", "split-window", "-v", "-t", f"{name}:0.1", "gemini"], check=True, capture_output=True)
+        subprocess.run(["tmux", "select-pane", "-t", f"{name}:0.2"], capture_output=True)
+    except subprocess.CalledProcessError as exc:
+        raw = exc.stderr or b""
+        detail = raw.decode().strip() if isinstance(raw, bytes) else raw.strip()
+        raise click.ClickException(f"tmux error: {detail or exc.returncode}") from exc
+    click.echo(f"Workspace '{name}' launched.")
+    click.echo("  0.0  loom monitor   command center")
+    click.echo("  0.1  codex")
+    click.echo("  0.2  claude         Sage / Claude Code")
+    click.echo("  0.3  gemini")
+    if do_attach:
+        subprocess.run(["tmux", "attach-session", "-t", name])
+
+
+@main.group()
+@click.option("--name", default=WORKSPACE_NAME, show_default=True, help="Workspace tmux session name")
+@click.pass_context
+def workspace(ctx: click.Context, name: str) -> None:
+    """Manage the persistent Loom tmux workspace."""
+    ctx.ensure_object(dict)
+    ctx.obj["workspace_name"] = name
+
+
+@workspace.command(name="attach")
+@click.pass_context
+def workspace_attach(ctx: click.Context) -> None:
+    """Attach to the running Loom workspace."""
+    name = ctx.obj.get("workspace_name", WORKSPACE_NAME)
+    check = subprocess.run(["tmux", "has-session", "-t", name], capture_output=True)
+    if check.returncode != 0:
+        raise click.ClickException(f"No workspace '{name}' found. Run: loom launch")
+    result = subprocess.run(["tmux", "attach-session", "-t", name])
+    if result.returncode != 0:
+        raise click.ClickException(f"Failed to attach to '{name}'")
+
+
+@workspace.command(name="stop")
+@click.pass_context
+def workspace_stop(ctx: click.Context) -> None:
+    """Stop and kill the Loom workspace."""
+    name = ctx.obj.get("workspace_name", WORKSPACE_NAME)
+    check = subprocess.run(["tmux", "has-session", "-t", name], capture_output=True)
+    if check.returncode != 0:
+        raise click.ClickException(f"No workspace '{name}' found.")
+    try:
+        subprocess.run(["tmux", "kill-session", "-t", name], check=True, capture_output=True)
+    except subprocess.CalledProcessError as exc:
+        raw = exc.stderr or b""
+        detail = raw.decode().strip() if isinstance(raw, bytes) else raw.strip()
+        raise click.ClickException(f"tmux error: {detail or exc.returncode}") from exc
+    click.echo(f"Stopped workspace: {name}")
 
 
 @main.command(name="sessions")
