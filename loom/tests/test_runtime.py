@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from loom.models import Signal, UsageEvent, iso_now
-from loom.runtime import FakeRuntime, build_task_packet, resolve_agent, spawn_task
+from loom.runtime import FakeRuntime, RuntimeErrorDetail, TmuxRuntime, build_task_packet, resolve_agent, spawn_task
 from loom.storage import LoomStore
 
 
@@ -65,3 +66,49 @@ def test_active_task_counts_include_running_sessions(meta_root):
     spawn_task(store, "one", agent="gemini", repo=Path(meta_root), runtime=FakeRuntime())
 
     assert store.active_task_counts() == {"gemini_cli": 1}
+
+
+def test_tmux_stop_failure_is_clean_error(monkeypatch):
+    monkeypatch.setattr("shutil.which", lambda binary: f"/usr/bin/{binary}")
+
+    def fake_run(*args, **kwargs):
+        raise subprocess.CalledProcessError(
+            returncode=1,
+            cmd=args[0],
+            stderr="can't find session: does-not-exist",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    try:
+        TmuxRuntime().stop("does-not-exist")
+    except RuntimeErrorDetail as exc:
+        assert "can't find session" in str(exc)
+    else:
+        raise AssertionError("expected RuntimeErrorDetail")
+
+
+def test_tmux_runtime_uses_tmux_safe_target_names(monkeypatch, meta_root):
+    calls = []
+    monkeypatch.setattr("shutil.which", lambda binary: f"/usr/bin/{binary}")
+
+    def fake_run(*args, **kwargs):
+        calls.append(args[0])
+        return subprocess.CompletedProcess(args=args[0], returncode=0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    session = spawn_task(
+        LoomStore(root=meta_root),
+        "inspect",
+        agent="codex",
+        repo=Path(meta_root),
+        runtime=TmuxRuntime(),
+    ).session
+
+    TmuxRuntime().attach(session.session_name)
+    TmuxRuntime().stop(session.session_name)
+
+    assert session.session_name.startswith("loom:")
+    assert calls[0][4] == session.session_name.replace(":", "_")
+    assert calls[1][-1] == session.session_name.replace(":", "_")
+    assert calls[2][-1] == session.session_name.replace(":", "_")

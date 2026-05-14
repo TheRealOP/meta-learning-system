@@ -131,3 +131,35 @@ def test_sessions_command_outputs_recorded_sessions(meta_root):
 
     assert result.exit_code == 0
     assert "loom:repo:abc123" in result.output
+
+
+def test_stop_marks_recorded_tmux_session_stopped_when_missing(monkeypatch, meta_root):
+    from loom.runtime import RuntimeErrorDetail
+    from loom.storage import LoomStore
+
+    store = LoomStore(root=meta_root)
+    store.upsert_session(
+        TaskSession(
+            task_id="abc123",
+            session_name="loom:repo:abc123",
+            agent="codex_cli",
+            task="do thing",
+            repo=str(meta_root),
+            status="running",
+            command=[],
+            packet_path=str(meta_root / "packet.md"),
+            created_at=iso_now(),
+            updated_at=iso_now(),
+            runtime="tmux",
+        )
+    )
+    monkeypatch.setattr(
+        "loom.cli.TmuxRuntime.stop",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeErrorDetail("no server running")),
+    )
+
+    result = CliRunner().invoke(main, ["--root", str(meta_root), "stop", "loom:repo:abc123"])
+
+    assert result.exit_code == 0
+    assert "Marked missing tmux session stopped" in result.output
+    assert store.read_sessions()[0].status == "stopped"

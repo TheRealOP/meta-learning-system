@@ -196,6 +196,11 @@ def stop(ctx: click.Context, session: str) -> None:
     try:
         TmuxRuntime().stop(target)
     except RuntimeErrorDetail as exc:
+        if found:
+            store.update_session_status(target, "stopped")
+            click.echo(f"Marked missing tmux session stopped: {target}")
+            click.echo(f"Warning: {exc}", err=True)
+            return
         raise click.ClickException(str(exc)) from exc
     store.update_session_status(target, "stopped")
     click.echo(f"Stopped: {target}")

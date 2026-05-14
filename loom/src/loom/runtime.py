@@ -44,36 +44,45 @@ class TmuxRuntime:
         if not self.available():
             raise RuntimeErrorDetail("tmux binary not found")
         command = _shell_join(session.command)
-        subprocess.run(
-            [
-                "tmux",
-                "new-session",
-                "-d",
-                "-s",
-                session.session_name,
-                "-c",
-                session.repo,
-                command,
-            ],
-            check=True,
-            text=True,
-            capture_output=True,
-        )
+        tmux_name = _tmux_target(session.session_name)
+        try:
+            subprocess.run(
+                [
+                    "tmux",
+                    "new-session",
+                    "-d",
+                    "-s",
+                    tmux_name,
+                    "-c",
+                    session.repo,
+                    command,
+                ],
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeErrorDetail(_tmux_error("spawn", exc)) from exc
 
     def attach(self, session_name: str) -> None:
         if not self.available():
             raise RuntimeErrorDetail("tmux binary not found")
-        subprocess.run(["tmux", "attach-session", "-t", session_name], check=False)
+        result = subprocess.run(["tmux", "attach-session", "-t", _tmux_target(session_name)], check=False)
+        if result.returncode != 0:
+            raise RuntimeErrorDetail(f"tmux attach failed for {session_name}")
 
     def stop(self, session_name: str) -> None:
         if not self.available():
             raise RuntimeErrorDetail("tmux binary not found")
-        subprocess.run(
-            ["tmux", "kill-session", "-t", session_name],
-            check=True,
-            text=True,
-            capture_output=True,
-        )
+        try:
+            subprocess.run(
+                ["tmux", "kill-session", "-t", _tmux_target(session_name)],
+                check=True,
+                text=True,
+                capture_output=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeErrorDetail(_tmux_error("stop", exc)) from exc
 
 
 class FakeRuntime:
@@ -235,6 +244,17 @@ def _slug(value: str) -> str:
 
 def _shell_join(command: list[str]) -> str:
     return " ".join(_quote(part) for part in command)
+
+
+def _tmux_error(action: str, exc: subprocess.CalledProcessError) -> str:
+    detail = (exc.stderr or exc.stdout or "").strip()
+    if detail:
+        return f"tmux {action} failed: {detail}"
+    return f"tmux {action} failed with exit code {exc.returncode}"
+
+
+def _tmux_target(session_name: str) -> str:
+    return session_name.replace(":", "_")
 
 
 def _quote(value: str) -> str:
