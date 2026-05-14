@@ -39,6 +39,25 @@ akms search "<topic>"
 akms ask "<section>" "<question>"
 ```
 
+> **Query priority:** `akms ask` is PRIMARY. `akms search` is for section discovery only — never a substitute for `akms ask`.
+
+## Rule #2 — Prefer `akms ask` over `akms search` for knowledge queries
+
+```bash
+# CORRECT: ask the Expert when you know the section
+akms ask "distributed-systems" "What is the CAP theorem?"
+
+# CORRECT: search only to discover which section exists, then ask
+akms sections                          # see all available sections
+akms search "CAP theorem"              # find which section has this content
+akms ask "distributed-systems" "..."   # then ask the Expert
+
+# WRONG: stopping at search
+akms search "CAP theorem"              # do NOT stop here — go deeper with akms ask
+```
+
+`akms ask` invokes the **Expert Agent**, which loads the full section into memory for high-fidelity reasoning. `akms search` is an index scan — it finds node titles but does not reason over content.
+
 ---
 
 ## Agent Skills & MCP Tools
@@ -153,3 +172,45 @@ You are Agent 1. You interact with two AKMS-internal agents via CLI:
 You never instantiate these directly. The `akms` CLI handles routing.
 Your provider: Gemma 4 E4B (local Ollama) or Claude Code (subscription).
 Expert/Librarian provider: `claude_cli` → Opus 4.6 via `claude -p` subprocess.
+
+---
+
+## Loom Workspace
+
+You are running as a **persistent workspace agent** inside a Loom-coordinated tmux workspace. Loom is the local activity monitor and router for this multi-agent system.
+
+### Workspace Layout
+
+| Pane | Agent | Role |
+|---|---|---|
+| 0 | bash (command center) | Runs `loom monitor` — live agent availability |
+| 1 | Codex CLI | OpenAI Codex agent |
+| 2 | Claude Code | Sage (you) |
+| 3 | Gemini CLI | Google Gemini agent |
+
+### How to Delegate to Other Agents
+
+When a sub-task suits another agent better (lower load, different quota, specialized capability):
+
+```bash
+loom status                              # Check agent availability and scores
+loom route "<sub-task>"                  # Get routing recommendation (no spawn)
+loom run "<sub-task>"                    # Auto-route and spawn a Loom session
+loom spawn --agent codex "<sub-task>"    # Force a specific agent (codex|claude|gemini)
+loom sessions                            # List active/recent Loom sessions
+loom attach <session-name>               # Attach to a running session
+```
+
+Always run `loom status` before spawning — avoid adding load to already-busy agents. Report child session names to the user so they can track with `loom sessions`.
+
+### Mid-Session Context Management
+
+When your context grows long, preserve it before quality degrades:
+
+```bash
+loom ingest-and-compact --compact        # Ingest → AKMS, then send /compact to Claude pane
+loom ingest-and-compact                  # Ingest only (manual /compact later)
+```
+
+After compaction, prior knowledge is recoverable via `akms ask`.
+

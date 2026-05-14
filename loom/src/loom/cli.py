@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import signal
+import subprocess
+import tempfile
 import time
 from pathlib import Path
 
@@ -54,6 +56,7 @@ def status(ctx: click.Context, as_json: bool) -> None:
 def monitor(ctx: click.Context, once: bool, interval: int) -> None:
     """Watch the current Loom monitor state."""
     while True:
+        click.clear()
         store = _store(ctx)
         states = aggregate_states(store.read_events(), active_tasks=store.active_task_counts())
         selected = select_agent(states)
@@ -218,6 +221,68 @@ def log_command(ctx: click.Context, limit: int) -> None:
         return
     for event in events:
         click.echo(f"{event.ended_at} {event.agent} {event.signal} {event.task}")
+
+
+@main.command(name="ingest-and-compact")
+@click.option("--session", "session_id", default=None, help="Session ID or full path to JSONL file")
+@click.option("--pane", default=None, help="tmux pane to send /compact to (e.g. '0.2')")
+@click.option("--compact", "do_compact", is_flag=True, help="Send /compact to the target pane after ingesting")
+@click.pass_context
+def ingest_and_compact(ctx: click.Context, session_id: str | None, pane: str | None, do_compact: bool) -> None:
+    """Ingest the current Claude Code session into AKMS and optionally trigger /compact."""
+    claude_projects = Path.home() / ".claude" / "projects"
+
+    if session_id and Path(session_id).exists():
+        jsonl_path = Path(session_id)
+    elif session_id:
+        matches = list(claude_projects.rglob(f"{session_id}.jsonl"))
+        if not matches:
+            raise click.ClickException(f"No session JSONL found for id: {session_id}")
+        jsonl_path = matches[0]
+    else:
+        # Auto-detect: most-recent top-level session JSONL (excludes subagent files)
+        candidates = list(claude_projects.glob("*/*.jsonl"))
+        if not candidates:
+            raise click.ClickException("No Claude Code session JSONL files found under ~/.claude/projects/")
+        jsonl_path = max(candidates, key=lambda p: p.stat().st_mtime)
+
+    click.echo(f"Session: {jsonl_path}")
+
+    extract_script = Path.home() / ".claude" / "scripts" / "extract_conversation.py"
+    if not extract_script.exists():
+        raise click.ClickException(f"Extract script not found: {extract_script}")
+
+    with tempfile.NamedTemporaryFile(suffix=".md", delete=False, prefix="loom_conv_") as tmp:
+        out_path = tmp.name
+
+    result = subprocess.run(
+        ["python3", str(extract_script), str(jsonl_path), out_path],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise click.ClickException(f"extract_conversation.py failed: {result.stderr.strip()}")
+    click.echo(result.stdout.strip())
+
+    ingest_result = subprocess.run(
+        ["akms", "ingest", out_path],
+        capture_output=True,
+        text=True,
+    )
+    if ingest_result.returncode != 0:
+        raise click.ClickException(f"akms ingest failed: {ingest_result.stderr.strip()}")
+    click.echo(f"Ingested: {ingest_result.stdout.strip()}")
+
+    if do_compact:
+        target_pane = pane or "0.2"  # default: pane 2 = Claude Code
+        tmux_result = subprocess.run(
+            ["tmux", "send-keys", "-t", target_pane, "/compact", "Enter"],
+            capture_output=True,
+            text=True,
+        )
+        if tmux_result.returncode != 0:
+            raise click.ClickException(f"tmux send-keys failed: {tmux_result.stderr.strip()}")
+        click.echo(f"Sent /compact to pane {target_pane}")
 
 
 def _spawn(ctx: click.Context, task: str, *, agent: str | None, repo: str) -> None:
