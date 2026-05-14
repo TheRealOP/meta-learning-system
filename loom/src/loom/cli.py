@@ -174,9 +174,9 @@ def launch(ctx: click.Context, name: str, do_attach: bool) -> None:
         subprocess.run(["tmux", "select-layout", "-t", f"{name}:0", "tiled"], capture_output=True)
         # Send commands to each pane
         subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.0", "loom monitor", "Enter"], capture_output=True)
-        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.1", "codex", "Enter"], capture_output=True)
-        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.2", "claude", "Enter"], capture_output=True)
-        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.3", "gemini", "Enter"], capture_output=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.1", "codex --dangerously-bypass-approvals-and-sandbox", "Enter"], capture_output=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.2", "claude --dangerously-skip-permissions", "Enter"], capture_output=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.3", "gemini --yolo", "Enter"], capture_output=True)
         subprocess.run(["tmux", "select-pane", "-t", f"{name}:0.2"], capture_output=True)
     except subprocess.CalledProcessError as exc:
         raw = exc.stderr or b""
