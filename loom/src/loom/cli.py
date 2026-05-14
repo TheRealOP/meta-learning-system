@@ -165,10 +165,18 @@ def launch(ctx: click.Context, name: str, do_attach: bool) -> None:
         suffix = f" --name {name}" if name != WORKSPACE_NAME else ""
         raise click.ClickException(f"Workspace '{name}' is already running. Use: loom workspace attach{suffix}")
     try:
-        subprocess.run(["tmux", "new-session", "-d", "-s", name, "loom monitor"], check=True, capture_output=True, text=True)
-        subprocess.run(["tmux", "split-window", "-h", "-t", f"{name}:0.0", "codex"], check=True, capture_output=True)
-        subprocess.run(["tmux", "split-window", "-v", "-t", f"{name}:0.0", "claude"], check=True, capture_output=True)
-        subprocess.run(["tmux", "split-window", "-v", "-t", f"{name}:0.1", "gemini"], check=True, capture_output=True)
+        # Create session with bare shells so Ctrl+C returns to prompt instead of closing the pane
+        subprocess.run(["tmux", "new-session", "-d", "-s", name], check=True, capture_output=True, text=True)
+        subprocess.run(["tmux", "split-window", "-h", "-t", f"{name}:0.0"], check=True, capture_output=True)
+        subprocess.run(["tmux", "split-window", "-v", "-t", f"{name}:0.0"], check=True, capture_output=True)
+        subprocess.run(["tmux", "split-window", "-v", "-t", f"{name}:0.1"], check=True, capture_output=True)
+        # Even out pane sizes before sending commands
+        subprocess.run(["tmux", "select-layout", "-t", f"{name}:0", "tiled"], capture_output=True)
+        # Send commands to each pane
+        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.0", "loom monitor", "Enter"], capture_output=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.1", "codex", "Enter"], capture_output=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.2", "claude", "Enter"], capture_output=True)
+        subprocess.run(["tmux", "send-keys", "-t", f"{name}:0.3", "gemini", "Enter"], capture_output=True)
         subprocess.run(["tmux", "select-pane", "-t", f"{name}:0.2"], capture_output=True)
     except subprocess.CalledProcessError as exc:
         raw = exc.stderr or b""
